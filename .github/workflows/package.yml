@@ -1,0 +1,49 @@
+name: Build script installers
+on:
+  push:
+    branches: [normal]
+  pull_request:
+    branches: [normal]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ensure Inno Setup is installed
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (!(Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Build installer and checksum
+        run: python packaging/build.py ${{ matrix.platform }}
+      - name: Test Linux install, reinstall and uninstall
+        if: runner.os == 'Linux'
+        run: python packaging/test_linux.py
+      - name: Test Windows install, reinstall and uninstall
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./packaging/test_windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omp-harness-scripts-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
