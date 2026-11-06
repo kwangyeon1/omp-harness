@@ -1,0 +1,31 @@
+name: Installer smoke tests
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [debian:bookworm-slim, alpine:3.22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install twice in a minimal container
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" ${{ matrix.image }} sh -c '
+            sh /repo/install-omp.sh &&
+            sh /repo/install-omp.sh &&
+            "$HOME/.local/bin/omp" --version'
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and reinstall using Windows PowerShell 5.1
+        shell: cmd
+        run: |
+          call install-omp.bat
+          if errorlevel 1 exit /b 1
+          call install-omp.bat
+          if errorlevel 1 exit /b 1
+          "%LOCALAPPDATA%\omp\omp.exe" --version
