@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "omp",
+      "name": "Official OMP installer",
+      "kind": "script",
+      "entry": {
+        "windows": "install-omp-tui.bat",
+        "linux": "install-omp-tui.sh"
+      }
+    }
+  ]
+}

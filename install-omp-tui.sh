@@ -33,7 +33,7 @@ case "$completion" in none|bash|zsh|fish) ;; *) exit 1;; esac
 ask 'After installation: exit, run, login' exit; action=$answer
 case "$action" in exit|run|login) ;; *) exit 1;; esac
 printf '\nRelease: %s\nDirectory: %s\nPATH: %s; reset settings: %s; tools: %s; completion: %s\n' "$ref" "$dest" "$addpath" "$reset" "$extras" "$completion"
-yesno 'Install now?' y || exit 0
+yesno 'Install now?' n || exit 0
 if [ "$extras" != none ]; then
  packages=''; case "$extras" in git) packages=git;; python) packages=python3;; both) packages='git python3';; esac
  root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi; }
@@ -60,6 +60,12 @@ fi
 if [ "$completion" != none ]; then
  "$dest/omp" completions "$completion" > "$dest/omp-completion.$completion"
  echo "Completion saved: $dest/omp-completion.$completion (load it from your shell configuration)."
+fi
+# Only this leaf script records a successful installation. Cancel/failure never changes JSON.
+if [ -n "${OMP_HARNESS_MANAGER:-}" ]; then
+ "$OMP_HARNESS_MANAGER" state set "${OMP_HARNESS_ITEM_ID:-omp}" true
+elif [ -f "$base/manage.sh" ] && { [ -x "$base/manager/manage-linux-amd64" ] || [ -x "$base/manager/manage-linux-arm64" ]; }; then
+ sh "$base/manage.sh" state set omp true
 fi
 if [ "$action" = login ]; then echo 'Use /login in OMP to authenticate.'; fi
 [ "$action" = exit ] || "$dest/omp"

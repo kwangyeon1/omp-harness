@@ -20,14 +20,9 @@ UninstallDisplayName=OMP Harness Scripts
 CloseApplications=no
 
 [Files]
-Source: "..\install-omp.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\install-omp-tui.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\install-omp-tui.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "windows-launch.bat"; DestDir: "{app}"; DestName: "launch-installer.bat"; Flags: ignoreversion
-Source: "VERSION"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\bundle\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Install or update official OMP"; Filename: "{app}\launch-installer.bat"; WorkingDir: "{app}"
-Name: "{group}\Interactive OMP installer"; Filename: "{app}\launch-installer.bat"; Parameters: "tui"; WorkingDir: "{app}"
+Name: "{group}\Script and plugin manager"; Filename: "{app}\launch-installer.bat"; WorkingDir: "{app}"
+Name: "{group}\OMP installer (ask before installing)"; Filename: "{app}\launch-installer.bat"; Parameters: "run omp"; WorkingDir: "{app}"
 Name: "{group}\Uninstall script package"; Filename: "{uninstallexe}"

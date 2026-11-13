@@ -17,25 +17,10 @@ trap 'rm -rf "$temp"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 tail -n +@PAYLOAD_LINE@ "$0" | tar -xz -C "$temp"
-# Validate the complete payload before touching an existing installation.
-for name in install-omp.sh install-omp-tui.sh uninstall.sh VERSION README.md; do
-    [ -f "$temp/$name" ] || { echo "Missing payload: $name" >&2; exit 1; }
-done
-if [ -e "$prefix" ]; then
-    [ -d "$prefix" ] && [ ! -L "$prefix" ] || { echo 'Destination must be a real directory' >&2; exit 1; }
-    if [ ! -f "$prefix/.omp-harness-package" ] && [ -n "$(ls -A "$prefix")" ]; then
-        echo 'Choose an empty directory or an existing OMP Harness Scripts installation' >&2
-        exit 1
-    fi
-fi
-mkdir -p "$prefix"
-for name in install-omp.sh install-omp-tui.sh uninstall.sh VERSION README.md; do
-    cp "$temp/$name" "$prefix/$name"
-done
-chmod 755 "$prefix/install-omp.sh" "$prefix/install-omp-tui.sh" "$prefix/uninstall.sh"
-printf '%s\n' 'omp-harness-script-installer' > "$prefix/.omp-harness-package"
-printf 'Installed OMP Harness Scripts in: %s\n' "$prefix"
-printf 'Run the wizard: sh "%s/install-omp-tui.sh"\n' "$prefix"
-printf 'Uninstall scripts: sh "%s/uninstall.sh"\n' "$prefix"
+# The extracted manager applies only package files; it never runs item scripts.
+sh "$temp/manage.sh" bundle apply "$prefix"
+printf 'Installed OMP Harness in: %s\n' "$prefix"
+printf 'Open manager: sh "%s/manage.sh"\n' "$prefix"
+printf 'Run OMP installer directly: sh "%s/install-omp-tui.sh"\n' "$prefix"
 exit 0
 __OMP_HARNESS_PAYLOAD__
