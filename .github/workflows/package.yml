@@ -1,0 +1,82 @@
+name: Build script installers
+on:
+  push:
+    branches: [normal, normal_develop, 'feature/1/**']
+  pull_request:
+    branches: [normal, normal_develop, 'feature/1/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.9'
+          cache: false
+      - name: Test JSON state and bundle contracts
+        run: go test ./manager
+      - name: Ensure Inno Setup is installed
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (!(Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Build installer and checksum
+        run: python packaging/build.py ${{ matrix.platform }}
+      - name: Test Linux install, reinstall and uninstall
+        if: runner.os == 'Linux'
+        run: python packaging/test_linux.py
+      - name: Test Windows install, reinstall and uninstall
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./packaging/test_windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omp-harness-scripts-${{ matrix.platform }}
+          path: |
+            dist/*.run
+            dist/*.exe
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+
+  release-files:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: omp-harness-scripts-*
+          path: parts
+      - name: Assemble exact files for a GitHub Release
+        run: |
+          mkdir release
+          cp parts/omp-harness-scripts-linux/*.run release/
+          cp parts/omp-harness-scripts-linux/*.zip release/
+          cp parts/omp-harness-scripts-windows/*.exe release/
+          cd release
+          sha256sum *.run *.zip *.exe > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omp-harness-release-files
+          path: release/*
+          if-no-files-found: error
