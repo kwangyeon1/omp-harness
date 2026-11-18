@@ -117,6 +117,12 @@ func TestOMPRestoreUsesPinnedBinaryHomeAndLocks(t *testing.T) {
 	_, saved := savedOMP(t)
 	project := fixtureInstaller(t)
 	dest := filepath.Join(t.TempDir(), "new PC runtime")
+	// Windows TEMP can use an 8.3 alias (RUNNER~1); restoration intentionally
+	// expands existing ancestors before building the launcher and rebasing paths.
+	dest, err := canonicalPath(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
 	log := filepath.Join(t.TempDir(), "commands")
 	t.Setenv("OMP_TEST_LOG", log)
 	t.Setenv("OMP_PROFILE", "unrelated")
