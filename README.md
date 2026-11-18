@@ -1,63 +1,28 @@
-# 순정 OMP 설치
+# OMP Harness
 
-## 스크립트를 담은 설치 패키지 (`normal` 브랜치)
+## 스크립트·플러그인을 선택 실행하는 배포 묶음 (0.2.0)
 
-Windows `.exe`와 Linux `.run` 설치 파일로 이 저장소의 설치 스크립트를 배포할 수 있습니다.
-패키지 설치 자체는 네트워크 연결 없이 스크립트를 배치합니다. 이후 사용자가 스크립트를 실행하면
-공식 서버에서 OMP를 다운로드합니다. OMP 바이너리는 패키지에 포함하지 않습니다.
+`.exe`·`.run`은 관리 도구와 개별 스크립트를 배치합니다. OMP/플러그인 설치를 자동으로 연속 실행하지 않습니다.
+관리 도구는 `catalog.json` 목록과 사용자 `state.json`의 boolean만 표시하고 선택한 스크립트만 실행합니다.
+실제 설치 여부·버전 점검, 사용자에게 설치/업데이트를 묻는 일, 성공 상태 기록은 개별 스크립트의 책임입니다.
+현재 카탈로그에는 OMP 대화형 설치기만 등록되어 있습니다. 플러그인도 같은 entry/state 계약으로 추가합니다.
 
-### 설치 파일 받기
+- [설치·상태 JSON·스크립트 추가·부분/전체 교체](docs/INSTALLATION.md)
+- [Release에 업로드할 정확한 파일 목록과 빌드 방법](docs/RELEASE.md)
+- 상태·사용자 설정은 배포 경로 밖에 보존하며 배포 기본값은 `defaults/`로 분리합니다.
+- 사용자 PC에 Go/Python은 필요 없습니다. 관리 도구 실행 파일을 묶음에 포함합니다.
+- GitHub Actions는 `normal`, `normal_develop`, `feature/1/**` push 및 대상 PR에서 실행합니다.
+- 최종 **omp-harness-release-files** artifact를 받으면 Release에 올릴 `.exe`, `.run`, `.zip`, `SHA256SUMS`가 있습니다.
 
-`normal` 브랜치에 push하면 GitHub Actions의 **Build script installers**가 두 OS용 패키지를 만들고,
-설치/재설치/제거 검사를 통과한 파일을 실행 결과의 **Artifacts**에 저장합니다.
-`omp-harness-scripts-windows` 또는 `omp-harness-scripts-linux`를 다운로드하고 압축을 해제하세요.
-비공개 저장소의 artifact 다운로드에는 저장소 접근 권한과 GitHub 로그인이 필요합니다.
-
-- Windows: `omp-harness-scripts-0.1.0-windows-setup.exe` 실행. 기본 경로는
-  `%LOCALAPPDATA%\Programs\omp-harness`이며 관리자 권한이 필요하지 않습니다.
-  시작 메뉴의 **OMP Harness Scripts**에서 일반 설치 또는 대화형 설치를 선택하세요.
-  Windows 설정의 앱 목록에서 스크립트 패키지를 제거할 수 있습니다.
-- Linux: `sh omp-harness-scripts-0.1.0-linux.run` 실행. 기본 경로는
-  `$HOME/.local/share/omp-harness`입니다. `--prefix /absolute/path`로 변경할 수 있습니다.
-  설치 후 `sh "$HOME/.local/share/omp-harness/install-omp-tui.sh"`로 마법사를 실행하세요.
-  제거는 `sh "$HOME/.local/share/omp-harness/uninstall.sh"`입니다.
-
-Linux 패키지 설치에는 POSIX 셸, tar(gzip 지원), tail, mktemp 및 기본 파일 유틸리티가 필요합니다.
-같은 설치 경로로 재실행하면 스크립트를 갱신합니다. 패키지 제거는 이미 설치한 OMP,
-OMP 설정·인증·세션 및 별도로 추가한 파일을 삭제하지 않습니다.
-두 패키지의 스크립트는 x64/ARM64용 OMP를 선택할 수 있으며, CI에서 실제 실행하는 플랫폼은 x64입니다.
-현재 Windows 설치 파일은 코드 서명되지 않았습니다.
-
-### 직접 빌드
-
-패키지 버전은 `packaging/VERSION`의 `MAJOR.MINOR.PATCH`로 관리하며 OMP 버전과 별개입니다.
-빌드에는 Python 3.10 이상이 필요합니다. Python은 패키지를 사용하는 PC에는 필요하지 않습니다.
+Linux 예시:
 
 ```sh
-# Linux 또는 Python이 설치된 개발 환경: Linux 패키지 생성
-python3 packaging/build.py linux
-# Linux에서 설치/재설치/제거 검사
-python3 packaging/test_linux.py
+sh omp-harness-scripts-0.2.0-linux.run
+sh "$HOME/.local/share/omp-harness/manage.sh"
 ```
 
-```powershell
-# Windows 개발 환경: Inno Setup 6 설치 후 실행
-python packaging/build.py windows
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/test_windows.ps1
-```
-
-결과는 `dist/`에 생성되며 파일마다 `.sha256` 체크섬 파일도 생성됩니다.
-Linux에서는 `sha256sum -c 파일명.run.sha256`, Windows에서는
-`Get-FileHash 파일명.exe -Algorithm SHA256`으로 확인할 수 있습니다.
-
-### Releases로 배포
-
-버전을 올리고 `normal`에 push한 후, 해당 커밋의 빌드와 검사가 성공하면 두 artifact에서 설치 파일과
-`.sha256` 파일을 꺼내 같은 버전의 GitHub Release에 첨부하세요. 예: `scripts-v0.1.0` 태그.
-Actions artifact는 보관 기간이 있는 빌드 결과물이므로 장기 배포에는 Release 자산을 사용하세요.
-현재 workflow는 설치 파일 제작과 검사까지 수행하며 Release를 자동 공개하지 않습니다.
-이 패키지에는 새 Release를 감지하는 자동 업데이트 클라이언트가 아직 없습니다.
-새 패키지를 실행해 스크립트를 갱신하는 방식이며, OMP 갱신은 제공된 설치 스크립트로 수행합니다.
+Windows에서는 설치 후 시작 메뉴 **Script and plugin manager**를 실행합니다.
+설치 상태는 마지막 JSON 기록이며, 관리 도구가 실제 시스템을 다시 검사하지 않습니다.
 
 ---
 

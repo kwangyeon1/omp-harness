@@ -30,7 +30,7 @@ Write-Host 'Shell completions are available for Bash/Zsh/Fish. Generate them wit
 $action = Ask 'After installation: exit, run, login' 'exit'
 if ($action -notin @('exit','run','login')) { throw 'Invalid action' }
 Write-Host "Release: $release; directory: $dest; scope: $scope; PATH: $pathChange; reset: $reset; shell: $shell; tools: $extra"
-if (!(Yes 'Install now?' 'y')) { exit 0 }
+if (!(Yes 'Install now?' 'n')) { exit 0 }
 if ($extra -ne 'none') {
  if (!(Get-Command winget -ErrorAction SilentlyContinue)) { throw 'Install App Installer (winget), or choose no optional tools.' }
  $ids = @(); if ($extra -in @('git','both')) { $ids += 'Git.Git' }; if ($extra -in @('python','both')) { $ids += 'Python.Python.3.13' }
@@ -64,5 +64,13 @@ if ($shell -ne 'keep') {
 }
 if ($pathChange) { $oldPath = [Environment]::GetEnvironmentVariable('Path', $target); $parts = @($oldPath -split ';' | Where-Object { $_ -and $_ -ne $dest }); [Environment]::SetEnvironmentVariable('Path', (@($dest) + $parts -join ';'), $target) }
 Write-Host "Installed: $exe. Open a new terminal for PATH changes."
+# Record only after this leaf has completed installation and configuration.
+if ($env:OMP_HARNESS_MANAGER) {
+ & $env:OMP_HARNESS_MANAGER state set $(if ($env:OMP_HARNESS_ITEM_ID) { $env:OMP_HARNESS_ITEM_ID } else { 'omp' }) true
+ if ($LASTEXITCODE -ne 0) { throw 'OMP installed, but state recording failed' }
+} elseif ((Test-Path (Join-Path $PSScriptRoot 'manager/manage-windows-amd64.exe')) -or (Test-Path (Join-Path $PSScriptRoot 'manager/manage-windows-arm64.exe'))) {
+ & (Join-Path $PSScriptRoot 'manage.cmd') state set omp true
+ if ($LASTEXITCODE -ne 0) { throw 'OMP installed, but state recording failed' }
+}
 if ($action -eq 'login') { Write-Host 'Use /login in OMP.' }
 if ($action -ne 'exit') { & $exe }

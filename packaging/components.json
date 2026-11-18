@@ -1,0 +1,21 @@
+{
+  "core": [
+    "manager/",
+    "defaults/",
+    "catalog.json",
+    "manage.sh",
+    "manage.cmd",
+    "README.md",
+    "VERSION",
+    "uninstall.sh",
+    "launch-installer.bat",
+    "docs/"
+  ],
+  "omp": [
+    "install-omp.sh",
+    "install-omp.bat",
+    "install-omp-tui.sh",
+    "install-omp-tui.bat",
+    "install-omp-tui.ps1"
+  ]
+}
