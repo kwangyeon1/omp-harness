@@ -24,5 +24,6 @@ Source: "..\dist\bundle\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 
 [Icons]
 Name: "{group}\Script and plugin manager"; Filename: "{app}\launch-installer.bat"; WorkingDir: "{app}"
-Name: "{group}\OMP installer (ask before installing)"; Filename: "{app}\launch-installer.bat"; Parameters: "run omp"; WorkingDir: "{app}"
+Name: "{group}\Installation menu"; Filename: "{app}\launch-installer.bat"; WorkingDir: "{app}"
+Name: "{group}\Restore saved environment"; Filename: "{app}\launch-installer.bat"; Parameters: "restore"; WorkingDir: "{app}"
 Name: "{group}\Uninstall script package"; Filename: "{uninstallexe}"

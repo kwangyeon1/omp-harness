@@ -55,7 +55,7 @@ func managedName(name string) bool {
 		}
 	}
 	switch name {
-	case "catalog.json", "manage.sh", "manage.cmd", "launch-installer.bat", "uninstall.sh", "VERSION", "README.md", "install-omp.sh", "install-omp.bat", "install-omp-tui.sh", "install-omp-tui.bat", "install-omp-tui.ps1":
+	case "restore.sh", "restore.bat", "restore-tui.sh", "restore-tui.bat", "catalog.json", "manage.sh", "manage.cmd", "launch-installer.bat", "uninstall.sh", "VERSION", "README.md", "install-omp.sh", "install-omp.bat", "install-omp-tui.sh", "install-omp-tui.bat", "install-omp-tui.ps1":
 		return true
 	}
 	return false

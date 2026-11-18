@@ -1,30 +1,37 @@
 # OMP Harness
 
-## 스크립트·플러그인을 선택 실행하는 배포 묶음 (0.2.0)
+## 일반 설치·반복 설치 메뉴·다른 PC 복원 (0.3.0)
 
-`.exe`·`.run`은 관리 도구와 개별 스크립트를 배치합니다. OMP/플러그인 설치를 자동으로 연속 실행하지 않습니다.
-관리 도구는 `catalog.json` 목록과 사용자 `state.json`의 boolean만 표시하고 선택한 스크립트만 실행합니다.
-실제 설치 여부·버전 점검, 사용자에게 설치/업데이트를 묻는 일, 성공 상태 기록은 개별 스크립트의 책임입니다.
-현재 카탈로그에는 OMP 대화형 설치기만 등록되어 있습니다. 플러그인도 같은 entry/state 계약으로 추가합니다.
+[DSH 작업 요약](https://github.com/kwangyeon1/dsh-harness/blob/fb6e0becf1e867e75ca221372dcca0bef5608724/docs/DAILY_SUMMARY_2026-11-17.md)의 흐름을 OMP에 적용했다.
+일반 설치와 TUI는 **동일한 개별 공식 설치 스크립트**를 실행한다. OMP는 소스 빌드 대신 공식 바이너리를 사용한다.
+사용 중 추가한 설정·확장 소스·플러그인 의존성 기록은 스냅샷으로 보관하고, 다른 PC에서 동일 OMP 버전과 잠금 파일로 복원한다.
 
-- [설치·상태 JSON·스크립트 추가·부분/전체 교체](docs/INSTALLATION.md)
-- [Release에 업로드할 정확한 파일 목록과 빌드 방법](docs/RELEASE.md)
-- 상태·사용자 설정은 배포 경로 밖에 보존하며 배포 기본값은 `defaults/`로 분리합니다.
-- 사용자 PC에 Go/Python은 필요 없습니다. 관리 도구 실행 파일을 묶음에 포함합니다.
-- GitHub Actions는 `normal`, `normal_develop`, `feature/1/**` push 및 대상 PR에서 실행합니다.
-- 최종 **omp-harness-release-files** artifact를 받으면 Release에 올릴 `.exe`, `.run`, `.zip`, `SHA256SUMS`가 있습니다.
+- [설치·매개변수·상태 기록·배포 갱신](docs/INSTALLATION.md)
+- [환경 보관·Git 이동·별도 복원 TUI·지원 범위](docs/RESTORE.md)
+- [Release 파일과 빌드 절차](docs/RELEASE.md)
 
-Linux 예시:
+`.exe`·`.run`은 관리 도구와 스크립트를 배치하며 OMP를 자동 설치하지 않는다. 배포 묶음에는 Linux/Windows x64·ARM64 관리자 실행 파일이 포함되어 사용자 PC에 Go/Python이 필요 없다.
+소스 체크아웃은 `python3 packaging/build.py linux` 또는 `windows`로 빌드한 뒤 `dist/bundle`에서 관리 도구를 실행한다.
 
 ```sh
-sh omp-harness-scripts-0.2.0-linux.run
-sh "$HOME/.local/share/omp-harness/manage.sh"
+# 배포 묶음 안에서
+sh manage.sh                       # 선택 → 사용법 → 인자 → 확인 → 실행 → 메뉴 복귀
+sh manage.sh help omp
+sh manage.sh run omp v18.8.9        # 일반 설치 스크립트 직접 실행
+sh manage.sh --project "/absolute/local/omp-harness"
+
+# 사용 중인 OMP를 종료한 뒤 PC A에서 보관
+sh manage.sh snapshot omp "$HOME/.local/bin/omp" "$HOME/.omp" "/absolute/saved-environment"
+# 파일 검토 후 Git commit·push 및 PC B의 clone은 사용자가 직접 수행
+sh restore-tui.sh "/absolute/cloned-environment"
+sh restore.sh run "/absolute/cloned-environment" omp "/absolute/new-runtime"
+sh "/absolute/new-runtime/start-restored.sh"
 ```
 
-Windows에서는 설치 후 시작 메뉴 **Script and plugin manager**를 실행합니다.
-설치 상태는 마지막 JSON 기록이며, 관리 도구가 실제 시스템을 다시 검사하지 않습니다.
+Windows는 `manage.cmd`, `restore-tui.bat`, `restore.bat`, `start-restored.ps1`을 사용한다.
+기존 `install-omp-tui.sh`/`.bat`/`.ps1`은 통합 설치 메뉴의 호환 진입점이다. 별도의 설치 엔진·설정 초기화 마법사는 제거했다.
+Git clone/push 기능은 제공하지 않으며 로컬 프로젝트 `--project PATH`만 지원한다.
 
----
 
 [can1357/oh-my-pi](https://github.com/can1357/oh-my-pi)의 **공식 배포 바이너리**를 설치합니다. 소스나 기능을 변경하지 않습니다. 여기서 샌드박스는 Bun, Node.js, npm, Git 등의 개발 의존성이 없거나 일부만 설치된 OS를 뜻합니다. 격리 환경을 생성하는 스크립트는 아닙니다.
 
@@ -65,13 +72,4 @@ install-omp.bat v18.8.9
 기존 Bun/Node/Git 유무와 관계없이 동일한 공식 바이너리 방식을 사용하므로 개발 런타임을 설치하거나 업그레이드하지 않습니다. 소스 빌드 도구, 프로젝트별 언어 서버, Python 및 모델 API 인증은 설치 범위에 포함되지 않습니다. 설치 후 `omp`를 실행해 모델 제공자 로그인을 진행하세요. Windows 공식 설치기는 기존 Git Bash를 발견하면 OMP의 shellPath를 설정할 수 있습니다.
 
 GitHub Actions는 최소 Debian/Alpine 컨테이너와 Windows에서 설치 및 재설치를 검사합니다. Windows 호스팅 러너는 완전히 빈 OS가 아니며, ARM64 실행 검증은 포함하지 않습니다.
-
-## 대화형 TUI 설치
-
-Linux: `sh install-omp-tui.sh`. Windows: `install-omp-tui.bat` (같은 폴더의 `install-omp-tui.ps1` 필요).
-번호/텍스트 입력과 Enter 기본값을 사용하는 터미널 마법사입니다. 프롬프트는 콘솔 인코딩 호환성을 위해 영어입니다. Ctrl+C로 취소합니다.
-버전, 기존 설치 교체, 사용자/시스템 범위, 경로, 프록시, PATH, 설정 백업/초기화, 선택 도구, 설치 후 실행을 선택하고 최종 요약을 확인합니다.
-Linux는 기존 설치기를 호출하며 의존성 설치 및 Arch 시스템 업데이트를 사전에 안내합니다. 시스템 범위는 root 실행이 필요합니다. 선택 도구 자동 설치는 apt/apk/dnf를 지원합니다. 자동완성은 파일로 저장하며 셸 설정에서 직접 불러옵니다.
-Windows는 공식 빌드 서비스에서 SHA-256 검증 후 바이너리를 설치합니다. 시스템 범위에는 관리자 터미널이 필요합니다. 기본 PowerShell로 설치하며 선택 도구에만 winget이 필요합니다. 사설 CA는 Windows 인증서 저장소에서 준비합니다. 셸 설정 유지/내장/Git Bash를 선택할 수 있습니다.
-설정 변경 대상은 현재 사용자의 `~/.omp/agent/settings.json`이며 세션 및 인증 데이터는 초기화하지 않습니다. 백업은 같은 디렉터리에 고유 이름으로 보관합니다. 언어 서버는 프로젝트별로 별도 설치하세요.
 

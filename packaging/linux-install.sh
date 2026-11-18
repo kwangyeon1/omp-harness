@@ -21,6 +21,7 @@ tail -n +@PAYLOAD_LINE@ "$0" | tar -xz -C "$temp"
 sh "$temp/manage.sh" bundle apply "$prefix"
 printf 'Installed OMP Harness in: %s\n' "$prefix"
 printf 'Open manager: sh "%s/manage.sh"\n' "$prefix"
-printf 'Run OMP installer directly: sh "%s/install-omp-tui.sh"\n' "$prefix"
+printf 'Run OMP installer directly: sh "%s/install-omp.sh"\n' "$prefix"
+printf 'Restore saved environment: sh "%s/restore-tui.sh"\n' "$prefix"
 exit 0
 __OMP_HARNESS_PAYLOAD__

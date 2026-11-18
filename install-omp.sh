@@ -61,3 +61,8 @@ else
 fi
 "$PI_INSTALL_DIR/omp" --version
 printf '\nInstalled official OMP: %s/omp\nAdd this directory to PATH or invoke the full path.\n' "$PI_INSTALL_DIR"
+
+# Only the successful leaf records installation; the menu never infers it.
+if [ -n "${OMP_HARNESS_MANAGER:-}" ]; then
+    "$OMP_HARNESS_MANAGER" state set "${OMP_HARNESS_ITEM_ID:-omp}" true
+fi

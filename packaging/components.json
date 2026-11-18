@@ -9,7 +9,11 @@
     "VERSION",
     "uninstall.sh",
     "launch-installer.bat",
-    "docs/"
+    "docs/",
+    "restore.sh",
+    "restore.bat",
+    "restore-tui.sh",
+    "restore-tui.bat"
   ],
   "omp": [
     "install-omp.sh",
