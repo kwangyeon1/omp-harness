@@ -29,10 +29,11 @@ def prepare_bundle(version):
             subprocess.run([go, 'build', '-trimpath', '-buildvcs=false', '-ldflags=-s -w -buildid=',
                             '-o', str(stage / 'manager' / name), './manager'], cwd=ROOT, env=env, check=True)
     for name in ('catalog.json', 'manage.sh', 'manage.cmd', 'README.md', 'install-omp.sh',
-                 'install-omp.bat', 'install-omp-tui.sh', 'install-omp-tui.bat', 'install-omp-tui.ps1'):
+                 'install-omp.bat', 'install-omp-tui.sh', 'install-omp-tui.bat', 'install-omp-tui.ps1',
+                 'restore.sh', 'restore.bat', 'restore-tui.sh', 'restore-tui.bat'):
         shutil.copyfile(ROOT / name, stage / name)
     (stage / 'docs').mkdir()
-    for name in ('INSTALLATION.md', 'RELEASE.md'):
+    for name in ('INSTALLATION.md', 'RELEASE.md', 'RESTORE.md'):
         shutil.copyfile(ROOT / 'docs' / name, stage / 'docs' / name)
     for directory in ('defaults', 'scripts', 'plugins'):
         if (ROOT / directory).is_dir():

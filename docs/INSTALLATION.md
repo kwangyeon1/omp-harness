@@ -9,7 +9,7 @@
 현재 실제 등록 항목은 OMP 하나다. 배포할 플러그인이 정해지면 아래 계약으로 추가한다.
 
 각 항목의 스크립트가 필요할 때 자체 점검·설치/업데이트 질문·설정 변경을 수행한다.
-OMP는 기존 대화형 설치기를 사용하며, 교체/최종 설치를 사용자에게 묻는다.
+OMP는 `install-omp.sh`/`.bat`를 직접 실행한다. 메뉴는 사용법 표시 후 인자와 최종 실행 여부를 묻고, 실행 후 다시 목록으로 돌아온다. 직접 호출은 별도 확인 없이 설치한다.
 현재 OMP 스크립트는 최신 버전과 비교하는 업데이트 알림을 구현하지 않았고, 사용자가 latest/특정 버전을 골라 재설치한다.
 상위 도구가 종료 코드 0만 보고 설치 상태를 바꾸는 로직은 없다. 취소도 정상 종료일 수 있기 때문이다.
 
@@ -20,7 +20,7 @@ OMP는 기존 대화형 설치기를 사용하며, 교체/최종 설치를 사�
 Linux:
 
 ```sh
-sh omp-harness-scripts-0.2.0-linux.run
+sh omp-harness-scripts-0.3.0-linux.run
 sh "$HOME/.local/share/omp-harness/manage.sh"         # 선택 메뉴
 sh "$HOME/.local/share/omp-harness/manage.sh" list    # JSON 상태 표시
 sh "$HOME/.local/share/omp-harness/manage.sh" run omp # 선택한 스크립트만 실행
@@ -28,8 +28,37 @@ sh "$HOME/.local/share/omp-harness/manage.sh" run omp # 선택한 스크립트�
 
 Windows: `.exe` 설치 후 시작 메뉴의 **Script and plugin manager**를 사용한다.
 관리 도구가 설치된 디렉터리에서 `manage.cmd list`, `manage.cmd run omp`도 가능하다.
-개별 OMP 대화형 스크립트를 직접 실행해도 패키지에 포함된 관리 도구로 상태를 기록한다.
-기존 비대화형 `install-omp.sh`/`.bat`는 하위 설치 수단으로 보존했으며 메뉴에 등록하지 않는다.
+`manage help omp`로 필요한 파일·사전 조건·매개변수를 확인한다. `manage run omp [vVERSION]`은 인자를 그대로 일반 설치기에 전달한다.
+`install-omp-tui.sh`/`.bat`/`.ps1`은 같은 반복 메뉴로 연결한다. 일반 스크립트는 단독으로도 실행되며 `OMP_HARNESS_MANAGER`가 전달된 경우 성공 후에만 상태를 기록한다.
+
+### 일반 설치 계약
+
+| OS | 필요한 파일 | 인자 | 기본 위치 |
+| --- | --- | --- | --- |
+| Linux | `install-omp.sh` | `[vVERSION]`, 생략 시 최신 stable | `$HOME/.local/bin` |
+| Windows | `install-omp.bat` (PowerShell payload 내장) | `[vVERSION]`, 생략 시 최신 stable | `%LOCALAPPDATA%\omp` |
+
+`PI_INSTALL_DIR`로 설치 경로를 지정한다. Linux x64/ARM64와 기본 셸·패키지 관리자가 필요하며 curl/CA 등 누락 도구를 보충할 때만 root/sudo를 사용한다.
+Windows x64/ARM64는 PowerShell 5.1이 필요하다. 인터넷과 쓰기 권한은 양 OS 공통이다. Bun/Node/Git는 일반 바이너리 설치에 필요 없다.
+두 스크립트는 공식 설치기의 binary 모드와 SHA-256 검증을 사용하고 `omp --version` 성공 후 종료한다.
+
+```sh
+PI_INSTALL_DIR="/absolute/my-bin" sh install-omp.sh v18.8.9
+sh manage.sh run omp v18.8.9
+sh manage.sh --project "/absolute/local/script-project" help omp
+```
+
+```bat
+set "PI_INSTALL_DIR=C:\my-bin"
+install-omp.bat v18.8.9
+manage.cmd run omp v18.8.9
+```
+
+메뉴의 인자는 JSON 문자열 배열로 입력한다: `[]` 또는 `["v18.8.9"]`. 공백 경로도 문자열 하나로 보존한다.
+잘못된 입력·취소·실패 후 다시 메뉴로 돌아온다. 다른 항목의 Windows entry는 `.ps1`도 지원한다.
+CMD entry는 명령 확장 문자가 포함된 인자를 거부한다. 복잡한 인자가 필요한 항목은 PowerShell entry를 사용한다.
+`--project PATH`는 `catalog.json`이 있는 기존 로컬 프로젝트를 선택한다. Git clone/push는 직접 수행한다.
+복원은 [별도 복원 메뉴](RESTORE.md)를 사용한다.
 
 ## 목록과 상태
 
@@ -42,6 +71,7 @@ Windows: `.exe` 설치 후 시작 메뉴의 **Script and plugin manager**를 사
       "id": "plugin-a",
       "name": "Plugin A",
       "kind": "plugin",
+      "help": "Required files, prerequisites, arguments and examples",
       "entry": {"linux": "plugins/plugin-a/install.sh", "windows": "plugins/plugin-a/install.cmd"}
     }
   ]
@@ -95,7 +125,7 @@ if ($LASTEXITCODE -ne 0) { throw '상태 기록 실패' }
 사용자 설정은 위 상태 파일 기본 디렉터리의 `settings.json`에 따로 둔다.
 관리 도구는 해당 경로만 개별 스크립트에 전달하며, 플러그인별 설정을 자동 적용하지 않는다.
 설정을 사용하는 스크립트가 기본값을 읽고 사용자 값을 우선 적용하는 정책을 구현한다.
-OMP의 기존 `~/.omp` 설정·로그인·세션은 배포 묶음 밖에 있다. OMP 설정 초기화는 기존 마법사의 명시적 선택에서만 수행한다.
+OMP의 기존 `~/.omp` 설정·로그인·세션은 배포 묶음 밖에 있다. 관리 메뉴는 OMP 설정 초기화 기능을 제공하지 않는다.
 
 ## 배포 파일 부분/전체 교체
 
@@ -126,7 +156,7 @@ Linux `.run` 재실행은 같은 manifest 기반 전체 적용을 사용한다.
 ## 개발: 새 항목 추가
 
 1. `scripts/` 또는 `plugins/<id>/`에 독립 설치/업데이트 스크립트를 작성한다.
-2. `catalog.json`에 플랫폼별 entry를 등록한다. 실제 점검/사용자 질문/상태 기록은 스크립트 안에 둔다.
+2. `catalog.json`에 플랫폼별 entry와 help(필요 파일·사전 조건·인자·예시)를 등록한다. 실제 점검/사용자 질문/상태 기록은 스크립트 안에 둔다.
 3. `packaging/components.json`에 해당 파일/디렉터리 소유 구성요소를 등록한다.
 4. `packaging/VERSION`을 올리고 빌드한다. 같은 파일에 중복 소유자를 지정하면 빌드가 실패한다.
 5. 기존 설치에서 부분/전체 갱신 후 사용자 상태·설정 보존을 검사한다.

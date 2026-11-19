@@ -5,9 +5,10 @@
       "name": "Official OMP installer",
       "kind": "script",
       "entry": {
-        "windows": "install-omp-tui.bat",
-        "linux": "install-omp-tui.sh"
-      }
+        "linux": "install-omp.sh",
+        "windows": "install-omp.bat"
+      },
+      "help": "Official binary installation. Files: install-omp.sh (Linux) or install-omp.bat (Windows). Args: [vVERSION], empty = latest stable. Example: [\"v18.8.9\"]. PI_INSTALL_DIR changes destination; default ~/.local/bin or %LOCALAPPDATA%/omp. Requires HTTPS/network; Linux may install missing OS utilities with sudo. Windows requires PowerShell 5.1. No Bun/Node/Go needed. See docs/INSTALLATION.md."
     }
   ]
 }

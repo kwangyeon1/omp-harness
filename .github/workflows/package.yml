@@ -1,9 +1,9 @@
 name: Build script installers
 on:
   push:
-    branches: [normal, normal_develop, 'feature/1/**']
+    branches: [normal, normal_develop, 'feature/**']
   pull_request:
-    branches: [normal, normal_develop, 'feature/1/**']
+    branches: [normal, normal_develop, 'feature/**']
   workflow_dispatch:
 
 permissions:
@@ -31,6 +31,8 @@ jobs:
           cache: false
       - name: Test JSON state and bundle contracts
         run: go test ./manager
+      - name: Vet manager
+        run: go vet ./manager
       - name: Ensure Inno Setup is installed
         if: runner.os == 'Windows'
         shell: pwsh

@@ -13,12 +13,14 @@ try {
     foreach ($attempt in 1..2) {
         $process = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$dest`"") -Wait -PassThru
         if ($process.ExitCode -ne 0) { throw "Installation failed: $($process.ExitCode)" }
-        foreach ($name in @('install-omp.bat', 'install-omp-tui.bat', 'install-omp-tui.ps1', 'README.md')) {
+        foreach ($name in @('install-omp.bat', 'install-omp-tui.bat', 'install-omp-tui.ps1', 'restore.bat', 'restore-tui.bat', 'README.md')) {
             if ((Get-FileHash (Join-Path $dest $name)).Hash -ne (Get-FileHash (Join-Path $root $name)).Hash) { throw "Payload mismatch: $name" }
         }
         if ((Get-Content "$dest/VERSION" -Raw).Trim() -ne $version) { throw 'Version mismatch' }
         $status = & "$dest/manage.cmd" list
         if ($LASTEXITCODE -ne 0 -or ($status -join "`n") -notmatch 'omp \| installed') { throw 'Manager did not read JSON state' }
+        $helpText = & "$dest/restore.bat" --help
+        if ($LASTEXITCODE -ne 0 -or ($helpText -join "`n") -notmatch 'restore run') { throw 'Restore entry failed' }
         if (!(Test-Path "$dest/launch-installer.bat")) { throw 'Missing launcher' }
     }
     Set-Content "$dest/user-file.txt" 'preserve me'

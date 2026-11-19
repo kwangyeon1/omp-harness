@@ -52,25 +52,36 @@ class InstallerTest(unittest.TestCase):
     def test_leaf_records_only_after_success(self):
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)
-            leaf = base / 'install-omp-tui.sh'
-            shutil.copyfile(ROOT / leaf.name, leaf)
             state = base / 'state.json'
             manager = ROOT / 'dist/bundle/manager/manage-linux-amd64'
-            env = dict(os.environ, OMP_HARNESS_MANAGER=str(manager), OMP_HARNESS_STATE_FILE=str(state))
-            installer = base / 'install-omp.sh'
-            answers = ['', '', str(base / 'bin'), '', '', 'y', 'n', 'n', '', '', '', 'y']
-            # A real leaf is exercised with a local fixture replacing the network installer.
-            installer.write_text('#!/bin/sh\nexit 1\n')
-            result = subprocess.run(['sh', str(leaf)], input='\n'.join(answers)+'\n', env=env, text=True, capture_output=True)
+            fake_bin = base / 'fake-bin'
+            fake_bin.mkdir()
+            installer = base / 'upstream.sh'
+            # Replace only HTTPS transport; execute the real standalone leaf.
+            curl = fake_bin / 'curl'
+            curl.write_text('#!/bin/sh\nwhile [ "$#" -gt 0 ]; do\nif [ "$1" = -o ]; then cp "$FIXTURE_UPSTREAM" "$2"; exit; fi\nshift\ndone\nexit 2\n')
+            curl.chmod(0o755)
+            env = dict(os.environ, OMP_HARNESS_MANAGER=str(manager),
+                       OMP_HARNESS_STATE_FILE=str(state), PI_INSTALL_DIR=str(base / 'bin'),
+                       FIXTURE_UPSTREAM=str(installer), PATH=str(fake_bin)+os.pathsep+os.environ['PATH'])
+            installer.write_text('exit 1\n')
+            result = subprocess.run(['sh', str(ROOT / 'install-omp.sh')], env=env, capture_output=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(state.exists())
-            installer.write_text('#!/bin/sh\nexit 0\n')
-            result = subprocess.run(['sh', str(leaf)], input='\n'.join(answers[:-1]+['n'])+'\n', env=env, text=True, capture_output=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertFalse(state.exists())
-            result = subprocess.run(['sh', str(leaf)], input='\n'.join(answers)+'\n', env=env, text=True, capture_output=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
+            installer.write_text('mkdir -p "$PI_INSTALL_DIR"\nprintf \'#!/bin/sh\\nexit 0\\n\' > "$PI_INSTALL_DIR/omp"\nchmod +x "$PI_INSTALL_DIR/omp"\n')
+            subprocess.run(['sh', str(ROOT / 'install-omp.sh'), 'v18.8.9'], env=env, check=True)
             self.assertEqual(json.loads(state.read_text()), {'omp': True})
+
+    def test_restore_entries_and_help(self):
+        bundle = ROOT / 'dist/bundle'
+        for name in ('restore.sh', 'restore-tui.sh'):
+            result = subprocess.run(['sh', str(bundle / name), '--help'], check=True, capture_output=True, text=True)
+            self.assertIn('restore run', result.stdout)
+        result = subprocess.run(['sh', str(bundle / 'manage.sh'), 'help', 'omp'], check=True, capture_output=True, text=True)
+        self.assertIn('install-omp.sh', result.stdout)
+        self.assertNotIn('install-omp-tui.sh', result.stdout)
+        for name in ('install-omp-tui.sh', 'manage.sh'):
+            subprocess.run(['sh', str(bundle / name)], input='\n', text=True, check=True, capture_output=True)
 
     def test_checksum(self):
         expected = PACKAGE.with_name(PACKAGE.name + ".sha256").read_text().split()[0]

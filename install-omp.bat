@@ -38,6 +38,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "OMP startup check failed (exit $LASTEXITCODE)." }
     Write-Host "Official OMP installed: $binary"
     Write-Host 'Open a new terminal to use omp from PATH.'
+    if ($env:OMP_HARNESS_MANAGER) {
+        $itemId = if ($env:OMP_HARNESS_ITEM_ID) { $env:OMP_HARNESS_ITEM_ID } else { 'omp' }
+        & $env:OMP_HARNESS_MANAGER state set $itemId true
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to record installation state.' }
+    }
 } finally {
     Remove-Item -LiteralPath $installer -Force -ErrorAction SilentlyContinue
 }
