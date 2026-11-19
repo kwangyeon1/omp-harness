@@ -20,7 +20,7 @@ OMP는 `install-omp.sh`/`.bat`를 직접 실행한다. 메뉴는 사용법 표�
 Linux:
 
 ```sh
-sh omp-harness-scripts-0.3.0-linux.run
+sh omp-harness-scripts-0.3.1-linux.run
 sh "$HOME/.local/share/omp-harness/manage.sh"         # 선택 메뉴
 sh "$HOME/.local/share/omp-harness/manage.sh" list    # JSON 상태 표시
 sh "$HOME/.local/share/omp-harness/manage.sh" run omp # 선택한 스크립트만 실행

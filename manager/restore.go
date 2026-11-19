@@ -298,7 +298,7 @@ func verifyItem(root, id string, item SavedItem) error {
 			return errors.New("reserved or case-colliding snapshot path: " + rel)
 		}
 		seen[key] = true
-		if item.Kind == "omp" && rel != "home-marker" && !strings.HasPrefix(rel, "home/") {
+		if item.Kind == "omp" && rel != "home-marker" && rel != "plugin-links.json" && !strings.HasPrefix(rel, "linked-plugins/") && !strings.HasPrefix(rel, "home/") {
 			return errors.New("OMP snapshot files must be under home/")
 		}
 		if hash, err := hex.DecodeString(want); err != nil || len(hash) != 32 {

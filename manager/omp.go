@@ -67,7 +67,15 @@ func snapshotOMP(binary, home, environment string) error {
 		if err := copyPortable(home, filepath.Join(stage, "home"), true); err != nil {
 			return err
 		}
-		if err := checkDependencies(filepath.Join(stage, "home"), nil); err != nil {
+		if err := snapshotPlugins(home, stage); err != nil {
+			return err
+		}
+		if err := checkDependencies(stage, func(dir string, locked bool) error {
+			if locked {
+				return nil
+			}
+			return runCommand(dir, append(os.Environ(), "BUN_BE_BUN=1"), binary, "install", "--lockfile-only", "--ignore-scripts")
+		}); err != nil {
 			return err
 		}
 		return os.WriteFile(filepath.Join(stage, "home-marker"), []byte("OMP config root restored to runtime/home\n"), 0600)
@@ -76,7 +84,7 @@ func snapshotOMP(binary, home, environment string) error {
 
 // Dependency manifests are restored with their own Bun lock, without resetting
 // OMP's enabled features/settings through repeated `omp plugin install` calls.
-func checkDependencies(home string, install func(string) error) error {
+func checkDependencies(home string, install func(string, bool) error) error {
 	return filepath.WalkDir(home, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -86,36 +94,6 @@ func checkDependencies(home string, install func(string) error) error {
 				return filepath.SkipDir
 			}
 			return nil
-		}
-		if d.Name() == "installed_plugins.json" {
-			// Marketplace caches/links need a module-specific restore adapter.
-			raw, err := os.ReadFile(p)
-			if err != nil {
-				return err
-			}
-			if s := strings.TrimSpace(string(raw)); s != "{}" && s != "[]" {
-				return fmt.Errorf("marketplace registry needs a separate module restore adapter: %s", p)
-			}
-		}
-		if d.Name() == "omp-plugins.lock.json" {
-			var lock struct {
-				Plugins map[string]json.RawMessage `json:"plugins"`
-			}
-			if err := readJSON(p, &lock); err != nil {
-				return err
-			}
-			var manifest struct {
-				Dependencies map[string]string `json:"dependencies"`
-			}
-			err := readJSON(filepath.Join(filepath.Dir(p), "package.json"), &manifest)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
-			for name := range lock.Plugins {
-				if _, ok := manifest.Dependencies[name]; !ok {
-					return fmt.Errorf("linked plugin %s needs a file: dependency with its source inside the config root and a Bun lock, or a separate module adapter", name)
-				}
-			}
 		}
 		if d.Name() != "package.json" {
 			return nil
@@ -138,11 +116,17 @@ func checkDependencies(home string, install func(string) error) error {
 				locked = true
 			}
 		}
-		if !locked {
+		rel, err := filepath.Rel(home, dir)
+		if err != nil {
+			return err
+		}
+		portablePath := filepath.ToSlash(rel)
+		capturedPlugin := strings.HasPrefix(portablePath, "linked-plugins/") || strings.Contains(portablePath, "/plugins/cache/plugins/")
+		if !locked && (!capturedPlugin || install == nil) {
 			return fmt.Errorf("dependency restore needs bun.lock or bun.lockb beside %s", p)
 		}
 		if install != nil {
-			return install(dir)
+			return install(dir, locked)
 		}
 		return nil
 	})
@@ -171,7 +155,7 @@ func prepareOMP(project, dest string, item SavedItem) error {
 	if err := os.MkdirAll(filepath.Join(home, "agent"), 0700); err != nil {
 		return err
 	}
-	if err := checkDependencies(home, nil); err != nil {
+	if err := checkDependencies(dest, nil); err != nil {
 		return err
 	}
 	env, err := restoredEnv(dest)
@@ -206,9 +190,12 @@ func prepareOMP(project, dest string, item SavedItem) error {
 	if actual != item.Release {
 		return fmt.Errorf("installed OMP version %s does not match saved %s", actual, item.Release)
 	}
-	if err = checkDependencies(home, func(dir string) error {
+	if err = checkDependencies(dest, func(dir string, locked bool) error {
 		return runCommand(dir, append(env, "BUN_BE_BUN=1"), binary, "install", "--frozen-lockfile")
 	}); err != nil {
+		return err
+	}
+	if err := restorePluginLinks(dest); err != nil {
 		return err
 	}
 	userHome, err := os.UserHomeDir()

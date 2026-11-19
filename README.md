@@ -1,6 +1,6 @@
 # OMP Harness
 
-## 일반 설치·반복 설치 메뉴·다른 PC 복원 (0.3.0)
+## 일반 설치·반복 설치 메뉴·다른 PC 복원 (0.3.1)
 
 [DSH 작업 요약](https://github.com/kwangyeon1/dsh-harness/blob/fb6e0becf1e867e75ca221372dcca0bef5608724/docs/DAILY_SUMMARY_2026-11-17.md)의 흐름을 OMP에 적용했다.
 일반 설치와 TUI는 **동일한 개별 공식 설치 스크립트**를 실행한다. OMP는 소스 빌드 대신 공식 바이너리를 사용한다.

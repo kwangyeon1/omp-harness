@@ -1,19 +1,19 @@
 # GitHub Release에 업로드할 파일
 
-패키지 버전은 `packaging/VERSION`이며 이번 버전은 **0.3.0**이다. OMP 제품 버전과 별개다.
+패키지 버전은 `packaging/VERSION`이며 이번 버전은 **0.3.1**이다. OMP 제품 버전과 별개다.
 
 ## 정확한 업로드 목록
 
 | 파일 | 용도 |
 | --- | --- |
-| `omp-harness-scripts-0.3.0-windows-setup.exe` | Windows 최초 설치/파일 배치 |
-| `omp-harness-scripts-0.3.0-linux.run` | Linux 최초 설치/전체 묶음 교체 |
-| `omp-harness-bundle-0.3.0.zip` | Windows/Linux x64·ARM64 공용 묶음, 선택 구성요소 또는 전체 적용 |
+| `omp-harness-scripts-0.3.1-windows-setup.exe` | Windows 최초 설치/파일 배치 |
+| `omp-harness-scripts-0.3.1-linux.run` | Linux 최초 설치/전체 묶음 교체 |
+| `omp-harness-bundle-0.3.1.zip` | Windows/Linux x64·ARM64 공용 묶음, 선택 구성요소 또는 전체 적용 |
 | `SHA256SUMS` | 위 세 파일의 실제 SHA-256 |
 
 GitHub Actions **Build script installers** 실행의 **omp-harness-release-files** artifact를 다운로드하고
 바깥 artifact ZIP을 푼 뒤 위 4개 파일을 같은 Release에 첨부한다.
-예시 태그는 `scripts-v0.3.0`이며, 대상은 빌드가 성공한 정확한 커밋으로 지정한다.
+예시 태그는 `scripts-v0.3.1`이며, 대상은 빌드가 성공한 정확한 커밋으로 지정한다.
 Release 본문에는 변경 내용, 위 해시, 설치 명령과 묶음 교체 명령을 적는다.
 현재 workflow는 파일 제작/검사/취합만 수행하며 태그나 Release를 자동 생성·공개하지 않는다.
 

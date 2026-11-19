@@ -2,8 +2,8 @@
 
 ## 현재 목표와 구현
 
-작업 브랜치: `feature/2/normal_develop_설치방식변경및_다른PC에서_복원`.
-기준 커밋: `ce66a24d46b284978c4be4117960212d0ed47ee6`, 패키지 버전: **0.3.0**.
+작업 브랜치: `feature/5/normal_develop_복원시_플러그인복원문제해결`.
+기준 커밋: `998c48d2818bdee5127c1fb02c91931a396f41e5`, 패키지 버전: **0.3.1**.
 DSH의 [최종 작업 요약](https://github.com/kwangyeon1/dsh-harness/blob/fb6e0becf1e867e75ca221372dcca0bef5608724/docs/DAILY_SUMMARY_2026-11-17.md)을 OMP에 맞게 적용했다.
 
 - 일반 설치와 반복 설치 메뉴는 같은 `install-omp.sh`/`.bat`를 호출한다. 별도 TUI 설치 엔진은 호환 진입점으로 교체했다.
@@ -40,7 +40,7 @@ Windows 실제 실행은 로컬 Linux 검증에 포함되지 않으며 Windows C
 
 인증 DB·세션·키·캐시·node_modules는 수집하지 않는다. 설정 파일 내 임의 비밀값은 Git 반영 전 검토한다.
 Bun 의존성에는 manifest 옆의 `bun.lock`/`bun.lockb`가 필요하다.
-외부 `plugin link`·marketplace registry/cache는 별도 모듈 어댑터가 필요하며 미지원 상태를 성공으로 처리하지 않는다.
+외부 연결 플러그인의 소스와 설치된 Marketplace 캐시를 보관하고 B에서 프로필별 링크와 등록 상태를 복원한다. 상세 범위는 docs/RESTORE.md에 있다.
 XDG/별도 agent 경로는 표준 설정 루트로 먼저 모으거나 어댑터를 사용한다. 자세한 제한은 RESTORE.md에 있다.
 
 ## 다음 작업
