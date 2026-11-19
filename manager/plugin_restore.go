@@ -125,11 +125,16 @@ func snapshotPlugins(home, stage string) error {
 				return fmt.Errorf("invalid linked package name %q", name)
 			}
 			path := filepath.Join(dir, "node_modules", filepath.FromSlash(name))
-			info, err := os.Lstat(path)
-			if err != nil || info.Mode()&os.ModeSymlink == 0 {
-				return fmt.Errorf("registered plugin %s needs its source directory link at %s", name, path)
+			// Readlink also understands Windows directory junctions, which Go
+			// does not always label with ModeSymlink in Lstat.
+			targetPath, err := os.Readlink(path)
+			if err != nil {
+				return fmt.Errorf("read registered plugin link %s: %w", name, err)
 			}
-			source, err := filepath.EvalSymlinks(path)
+			if !filepath.IsAbs(targetPath) {
+				targetPath = filepath.Join(filepath.Dir(path), targetPath)
+			}
+			source, err := filepath.EvalSymlinks(targetPath)
 			if err != nil {
 				return err
 			}
