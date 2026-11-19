@@ -332,3 +332,24 @@ func TestEmptyHomeAndSnapshotLock(t *testing.T) {
 		t.Fatal("ignored snapshot lock")
 	}
 }
+
+func TestRebaseSavedHomeAliasesAcrossPCs(t *testing.T) {
+	dest := t.TempDir()
+	path := filepath.Join(dest, "home/agent/settings.json")
+	write(t, path, `{"short":"C:\\Users\\RUNNER~1\\.omp\\agent\\custom.ts","long":"c:/users/RunnerAdmin/.omp/agent/custom.ts","sibling":"C:/Users/RUNNER~1/.omp-other/custom.ts","large":9007199254740993}`)
+	item := SavedItem{HomeOrigin: `C:\Users\runneradmin\.omp`, HomeAliases: []string{`C:\Users\RUNNER~1\.omp`}}
+	if err := rebaseHome(dest, item); err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]json.RawMessage
+	if err := readJSON(path, &got); err != nil {
+		t.Fatal(err)
+	}
+	want, _ := json.Marshal(filepath.Join(dest, "home/agent/custom.ts"))
+	if string(got["short"]) != string(want) || string(got["long"]) != string(want) || string(got["large"]) != "9007199254740993" {
+		t.Fatal(got)
+	}
+	if string(got["sibling"]) != `"C:/Users/RUNNER~1/.omp-other/custom.ts"` {
+		t.Fatal("changed sibling", string(got["sibling"]))
+	}
+}

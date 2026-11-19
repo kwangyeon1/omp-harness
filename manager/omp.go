@@ -47,6 +47,10 @@ func snapshotOMP(binary, home, environment string) error {
 	if err != nil {
 		return err
 	}
+	inputHome, err := filepath.Abs(home)
+	if err != nil {
+		return err
+	}
 	home, err = canonicalPath(home)
 	if err != nil {
 		return err
@@ -56,6 +60,9 @@ func snapshotOMP(binary, home, environment string) error {
 		return errors.New("OMP_HOME must be the config root containing agent/ (normally ~/.omp); consolidate custom/XDG directories first")
 	}
 	item := SavedItem{Kind: "omp", Release: release, HomeOrigin: home}
+	if inputHome != home {
+		item.HomeAliases = []string{inputHome}
+	}
 	return saveItem(environment, "omp", item, []string{home}, func(stage string) error {
 		if err := copyPortable(home, filepath.Join(stage, "home"), true); err != nil {
 			return err
@@ -240,23 +247,36 @@ exit $LASTEXITCODE
 
 // Relocate complete path prefixes, never similarly named neighbouring folders.
 func relocateJSON(value any, old, next string) any {
+	return relocateJSONPaths(value, []string{old}, next)
+}
+
+func relocateJSONPaths(value any, origins []string, next string) any {
 	switch v := value.(type) {
 	case string:
 		normalized := strings.ReplaceAll(v, "\\", "/")
-		previous := strings.TrimRight(strings.ReplaceAll(old, "\\", "/"), "/")
-		for _, prefix := range []string{"", "file:", "link:"} {
-			root := prefix + previous
-			if previous != "" && (normalized == root || strings.HasPrefix(normalized, root+"/")) {
-				return prefix + next + filepath.FromSlash(strings.TrimPrefix(normalized, root))
+		for _, old := range origins {
+			previous := strings.TrimRight(strings.ReplaceAll(old, "\\", "/"), "/")
+			windowsPath := (len(previous) > 1 && previous[1] == ':') || strings.HasPrefix(previous, "//")
+			for _, prefix := range []string{"", "file:", "link:"} {
+				root := prefix + previous
+				if previous == "" || len(normalized) < len(root) {
+					continue
+				}
+				candidate := normalized[:len(root)]
+				matches := candidate == root || (windowsPath && strings.EqualFold(candidate, root))
+				suffix := normalized[len(root):]
+				if matches && (suffix == "" || strings.HasPrefix(suffix, "/")) {
+					return prefix + next + filepath.FromSlash(suffix)
+				}
 			}
 		}
 	case []any:
 		for i, entry := range v {
-			v[i] = relocateJSON(entry, old, next)
+			v[i] = relocateJSONPaths(entry, origins, next)
 		}
 	case map[string]any:
 		for key, entry := range v {
-			v[key] = relocateJSON(entry, old, next)
+			v[key] = relocateJSONPaths(entry, origins, next)
 		}
 	}
 	return value

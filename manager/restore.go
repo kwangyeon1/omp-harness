@@ -20,10 +20,11 @@ import (
 
 // Saved environments own portable files, not OS-specific installations.
 type SavedItem struct {
-	HomeOrigin string            `json:"homeOrigin,omitempty"`
-	Kind       string            `json:"kind"`
-	Release    string            `json:"release"`
-	Files      map[string]string `json:"files"`
+	HomeAliases []string          `json:"homeAliases,omitempty"`
+	HomeOrigin  string            `json:"homeOrigin,omitempty"`
+	Kind        string            `json:"kind"`
+	Release     string            `json:"release"`
+	Files       map[string]string `json:"files"`
 }
 type Environment struct {
 	Version int                  `json:"version"`
@@ -521,7 +522,7 @@ func rebaseHome(dest string, item SavedItem) error {
 				return fmt.Errorf("invalid saved JSON %s: %w", p, err)
 			}
 			before, _ := json.Marshal(value)
-			value = relocateJSON(value, item.HomeOrigin, filepath.Join(dest, "home"))
+			value = relocateJSONPaths(value, append([]string{item.HomeOrigin}, item.HomeAliases...), filepath.Join(dest, "home"))
 			updated, err := json.MarshalIndent(value, "", "  ")
 			if err != nil {
 				return err
@@ -534,8 +535,8 @@ func rebaseHome(dest string, item SavedItem) error {
 			return os.WriteFile(p, append(updated, '\n'), 0600)
 		}
 		replacements := []string{}
-		for _, pair := range [][2]string{{item.HomeOrigin, filepath.Join(dest, "home")}} {
-			old, newPath := pair[0], pair[1]
+		for _, old := range append([]string{item.HomeOrigin}, item.HomeAliases...) {
+			newPath := filepath.Join(dest, "home")
 			if old == "" {
 				continue
 			}
